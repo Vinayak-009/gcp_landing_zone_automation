@@ -25,6 +25,11 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      # --- THIS IS THE FIX ---
+      # This step forcefully deletes any old, cached module information.
+      - name: Clean local Terraform caches
+        run: rm -rf .terraform*
+
       - name: Terraform Init
         id: init
         run: |
