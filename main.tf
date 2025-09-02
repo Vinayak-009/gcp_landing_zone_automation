@@ -1,26 +1,34 @@
 locals {
   # This block takes the list of full paths, e.g., ["a/b/c", "a/d"], and creates
   # a set of all the required parent folders, e.g., {"a", "a/b", "a/b/c", "a/d"}.
-  # This ensures that we create every folder in the hierarchy, in the correct order.
   all_required_folders = toset(flatten([
     for path in var.folder_paths : [
       for i in range(length(split("/", path))) :
       join("/", slice(split("/", path), 0, i + 1))
     ]
   ]))
+
+  # THIS IS THE FIX:
+  # We pre-calculate the parent for every folder. This is more explicit and avoids cycles.
+  folder_parents = {
+    for path in local.all_required_folders : path =>
+    # If the path contains a "/", its parent is the directory path.
+    # Otherwise, its parent is the organization.
+    contains(path, "/") ? dirname(path) : "organizations/${var.org_id}"
+  }
 }
 
-# This single resource block creates ALL folders, no matter how deep.
-# It intelligently figures out the parent of each folder based on its path.
+# This resource block now has a much simpler dependency graph.
 resource "google_folder" "main" {
   for_each = local.all_required_folders
 
-  display_name = basename(each.value)
+  display_name = basename(each.key)
 
-  # Determine the parent. If the path has a '/', the parent is the folder resource
-  # corresponding to the path's parent directory. Otherwise, the parent is the organization.
-  # THIS IS THE CORRECTED LINE:
-  parent = contains(split("/", each.value), "/") ? google_folder.main[dirname(each.value)].name : "organizations/${var.org_id}"
+  # For the parent, we check our pre-calculated map. If the parent is another
+  # folder, we look it up. Otherwise, we use the organization ID directly.
+  parent = substr(local.folder_parents[each.key], 0, 6) == "folder" ?
+    google_folder.main[local.folder_parents[each.key]].name :
+    local.folder_parents[each.key]
 }
 
 # Create all projects, looking up their parent folder from the resource above.
