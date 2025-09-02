@@ -1,7 +1,6 @@
 locals {
   # This block takes the list of full paths, e.g., ["a/b/c", "a/d"], and creates
   # a set of all the required parent folders, e.g., {"a", "a/b", "a/b/c", "a/d"}.
-  # This ensures that we create every folder in the hierarchy, in the correct order.
   all_required_folders = toset(flatten([
     for path in var.folder_paths : [
       for i in range(length(split("/", path))) :
@@ -9,25 +8,27 @@ locals {
     ]
   ]))
 
-  # We pre-calculate the parent for every folder. This is more explicit and avoids cycles.
-  folder_parents = {
-    for path in local.all_required_folders : path =>
-    # THIS IS THE FIX: Use 'strcontains' to check a string for a substring.
-    # If the path contains a "/", its parent is the directory path.
-    # Otherwise, its parent is the organization.
-    strcontains(path, "/") ? dirname(path) : "organizations/${var.org_id}"
+  # THIS IS THE FIX:
+  # We pre-calculate all parent relationships into a simple map. This is what
+  # breaks the dependency cycle for Terraform's planner.
+  folder_parent_map = {
+    for path in local.all_required_folders : path => {
+      is_nested   = strcontains(path, "/")
+      # If nested, calculate the parent path. If not, this value is null.
+      parent_path = strcontains(path, "/") ? join("/", slice(split("/", path), 0, length(split("/", path)) - 1)) : null
+    }
   }
 }
 
-# This resource block now has a much simpler dependency graph.
+# This resource block now has a very simple and clear dependency graph.
 resource "google_folder" "main" {
-  for_each = local.all_required_folders
+  for_each = local.folder_parent_map
 
   display_name = basename(each.key)
 
-  # For the parent, we check our pre-calculated map. If the parent is another
-  # folder, we look it up. Otherwise, we use the organization ID directly.
-  parent = substr(local.folder_parents[each.key], 0, 13) == "organizations" ? local.folder_parents[each.key] : google_folder.main[local.folder_parents[each.key]].name
+  # The parent is now determined by a simple lookup in our map.
+  # If it's nested, we depend on the parent folder. If not, we depend on the organization.
+  parent = each.value.is_nested ? google_folder.main[each.value.parent_path].name : "organizations/${var.org_id}"
 }
 
 # Create all projects, looking up their parent folder from the resource above.
