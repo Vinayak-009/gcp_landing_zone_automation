@@ -17,11 +17,10 @@ resource "google_folder" "main" {
 
   display_name = basename(each.value)
 
-  # Determine the parent. If the path has no '/', the parent is the organization.
-  # Otherwise, the parent is the folder resource corresponding to the path's parent directory.
-  parent = contains(split("/", each.value), "/") ?
-    google_folder.main[dirname(each.value)].name :
-    "organizations/${var.org_id}"
+  # Determine the parent. If the path has a '/', the parent is the folder resource
+  # corresponding to the path's parent directory. Otherwise, the parent is the organization.
+  # THIS IS THE CORRECTED LINE:
+  parent = contains(split("/", each.value), "/") ? google_folder.main[dirname(each.value)].name : "organizations/${var.org_id}"
 }
 
 # Create all projects, looking up their parent folder from the resource above.
@@ -33,4 +32,3 @@ resource "google_project" "main" {
   billing_account = var.billing_account
   folder_id       = google_folder.main[each.value.folder_path].folder_id
 }
-
