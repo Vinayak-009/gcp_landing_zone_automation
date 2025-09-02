@@ -8,18 +8,12 @@ resource "google_folder" "this" {
 
 # Create all projects defined within each folder at this level
 resource "google_project" "this" {
-  # Flatten all projects from all folders, then build a map
-  for_each = {
-    for proj in flatten([
-      for f in var.folders_to_create : [
-        for p in lookup(f, "projects", []) : {
-          project_id   = p.project_id
-          project_name = p.project_name
-          folder_name  = f.name
-        }
-      ]
-    ]) : proj.project_id => proj
-  }
+  # We flatten the list of projects from all folders at this level
+  for_each = { for f in var.folders_to_create for p in lookup(f, "projects", []) : p.project_id => {
+    project_id   = p.project_id
+    project_name = p.project_name
+    folder_name  = f.name
+  } }
 
   project_id      = each.value.project_id
   name            = each.value.project_name
@@ -29,7 +23,8 @@ resource "google_project" "this" {
 
 # RECURSION: Call this module again for the children of each folder
 module "children" {
-  source = "../folder_and_project"
+  # THIS IS THE FIX. It tells the module to call itself correctly.
+  source = "./"
 
   for_each = {
     for f in var.folders_to_create : f.name => f
@@ -38,6 +33,7 @@ module "children" {
 
   org_id            = var.org_id
   billing_account   = var.billing_account
+  # IMPORTANT: The parent for the next level is the ID of the folder just created.
   parent_id         = google_folder.this[each.key].id
   parent_path       = var.parent_path == "" ? each.key : "${var.parent_path}/${each.key}"
   folders_to_create = each.value.children
