@@ -1,6 +1,7 @@
 locals {
   # This block takes the list of full paths, e.g., ["a/b/c", "a/d"], and creates
   # a set of all the required parent folders, e.g., {"a", "a/b", "a/b/c", "a/d"}.
+  # This ensures that we create every folder in the hierarchy, in the correct order.
   all_required_folders = toset(flatten([
     for path in var.folder_paths : [
       for i in range(length(split("/", path))) :
@@ -8,7 +9,6 @@ locals {
     ]
   ]))
 
-  # THIS IS THE FIX:
   # We pre-calculate the parent for every folder. This is more explicit and avoids cycles.
   folder_parents = {
     for path in local.all_required_folders : path =>
@@ -26,9 +26,8 @@ resource "google_folder" "main" {
 
   # For the parent, we check our pre-calculated map. If the parent is another
   # folder, we look it up. Otherwise, we use the organization ID directly.
-  parent = substr(local.folder_parents[each.key], 0, 6) == "folder" ?
-    google_folder.main[local.folder_parents[each.key]].name :
-    local.folder_parents[each.key]
+  # THIS IS THE CORRECTED LINE:
+  parent = substr(local.folder_parents[each.key], 0, 13) == "organizations" ? local.folder_parents[each.key] : google_folder.main[local.folder_parents[each.key]].name
 }
 
 # Create all projects, looking up their parent folder from the resource above.
