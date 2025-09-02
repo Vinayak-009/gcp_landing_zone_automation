@@ -8,8 +8,18 @@ variable "billing_account" {
   type        = string
 }
 
-variable "folders" {
-  description = "A hierarchical definition of folders and their projects."
-  type        = any
+variable "folder_paths" {
+  description = "A simple list of all desired folder paths. e.g., ['level1/level2', 'level1/another']"
+  type        = set(string)
   default     = []
+}
+
+variable "projects" {
+  description = "A list of projects to create, including their full parent folder path."
+  type = list(object({
+    folder_path  = string
+    project_name = string
+    project_id   = string
+  }))
+  default = []
 }
