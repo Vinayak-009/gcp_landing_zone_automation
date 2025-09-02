@@ -23,7 +23,8 @@ resource "google_project" "this" {
 
 # RECURSION: Call this module again for the children of each folder
 module "children" {
-  source = "../folder_and_project" # The module calls itself
+  # THIS IS THE FIX: Changed source from "../folder_and_project" to "./"
+  source = "./" 
 
   for_each = { for f in var.folders_to_create : f.name => f if lookup(f, "children", null) != null }
 
