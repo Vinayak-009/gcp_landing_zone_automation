@@ -12,9 +12,10 @@ locals {
   # We pre-calculate the parent for every folder. This is more explicit and avoids cycles.
   folder_parents = {
     for path in local.all_required_folders : path =>
+    # THIS IS THE FIX: Use 'strcontains' to check a string for a substring.
     # If the path contains a "/", its parent is the directory path.
     # Otherwise, its parent is the organization.
-    contains(path, "/") ? dirname(path) : "organizations/${var.org_id}"
+    strcontains(path, "/") ? dirname(path) : "organizations/${var.org_id}"
   }
 }
 
@@ -26,7 +27,6 @@ resource "google_folder" "main" {
 
   # For the parent, we check our pre-calculated map. If the parent is another
   # folder, we look it up. Otherwise, we use the organization ID directly.
-  # THIS IS THE CORRECTED LINE:
   parent = substr(local.folder_parents[each.key], 0, 13) == "organizations" ? local.folder_parents[each.key] : google_folder.main[local.folder_parents[each.key]].name
 }
 
