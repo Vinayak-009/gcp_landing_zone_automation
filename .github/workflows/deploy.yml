@@ -62,5 +62,5 @@ jobs:
           terraform destroy -auto-approve -no-color \
             -var="org_id=${{ secrets.GCP_ORG_ID }}" \
             -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
-            -var-file="terraform.tfvars.json"```
+            -var-file="terraform.tfvars.json"
 
