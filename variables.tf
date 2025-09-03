@@ -8,18 +8,21 @@ variable "billing_account" {
   type        = string
 }
 
-variable "folder_paths" {
-  description = "A simple list of all desired folder paths. e.g., ['level1/level2', 'level1/another']"
-  type        = set(string)
-  default     = []
+variable "folders" {
+  description = "A flat list of all folders to create, with their parent explicitly defined."
+  type = list(object({
+    name   = string
+    parent = string # The 'name' of the parent folder, or 'org' for the root.
+  }))
+  default = []
 }
 
 variable "projects" {
-  description = "A list of projects to create, including their full parent folder path."
+  description = "A list of projects to create, including the name of their parent folder."
   type = list(object({
-    folder_path  = string
-    project_name = string
-    project_id   = string
+    parent_folder = string # The 'name' of the parent folder.
+    project_name  = string
+    project_id    = string
   }))
   default = []
 }
