@@ -1,6 +1,6 @@
 output "created_folders" {
-  description = "A map of all created folders and their IDs."
-  value       = { for key, folder in google_folder.main : key => folder.id }
+  description = "A map of all created folders and their IDs (numeric)."
+  value       = local.all_folder_ids
 }
 
 output "created_projects" {
