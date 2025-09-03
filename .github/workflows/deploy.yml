@@ -1,4 +1,4 @@
-name: 'Terraform Landing Zone Deployment'
+name: 'Terraform Landing Zone Action' # Renamed for clarity
 
 on:
   push:
@@ -25,8 +25,6 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # --- THIS IS THE FIX ---
-      # This step forcefully deletes any old, cached module information.
       - name: Clean local Terraform caches
         run: rm -rf .terraform*
 
@@ -36,18 +34,33 @@ jobs:
           terraform init \
             -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}"
 
-      - name: Terraform Plan
-        id: plan
-        run: |
-          terraform plan -no-color \
-            -var="org_id=${{ secrets.GCP_ORG_ID }}" \
-            -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
-            -var-file="terraform.tfvars.json"
+      # --- STEP 1: PLAN STEP IS COMMENTED OUT ---
+      # We don't need a separate plan when destroying.
+      # - name: Terraform Plan
+      #   id: plan
+      #   run: |
+      #     terraform plan -no-color \
+      #       -var="org_id=${{ secrets.GCP_ORG_ID }}" \
+      #       -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
+      #       -var-file="terraform.tfvars.json"
 
-      - name: Terraform Apply
-        id: apply
+      # --- STEP 2: APPLY STEP IS COMMENTED OUT ---
+      # This is replaced by the destroy step below.
+      # - name: Terraform Apply
+      #   id: apply
+      #   run: |
+      #     terraform apply -auto-approve -no-color \
+      #       -var="org_id=${{ secrets.GCP_ORG_ID }}" \
+      #       -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
+      #       -var-file="terraform.tfvars.json"
+
+      # --- STEP 3: NEW DESTROY STEP IS ADDED ---
+      # This will now run instead of plan and apply.
+      - name: Terraform Destroy
+        id: destroy
         run: |
-          terraform apply -auto-approve -no-color \
+          terraform destroy -auto-approve -no-color \
             -var="org_id=${{ secrets.GCP_ORG_ID }}" \
             -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
-            -var-file="terraform.tfvars.json"
+            -var-file="terraform.tfvars.json"```
+
