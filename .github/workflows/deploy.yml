@@ -28,19 +28,19 @@ jobs:
       - name: Clean local Terraform caches
         run: rm -rf .terraform*
 
-      # - name: Terraform Init
-      #   id: init
-      #   run: |
-      #     terraform init \
-      #       -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}"
-
-      - name: Terraform Plan
-        id: plan
+      - name: Terraform Init
+        id: init
         run: |
-          terraform plan -no-color \
-            -var="org_id=${{ secrets.GCP_ORG_ID }}" \
-            -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
-            -var-file="terraform.tfvars.json"
+          terraform init \
+            -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}"
+
+      # - name: Terraform Plan
+      #   id: plan
+      #   run: |
+      #     terraform plan -no-color \
+      #       -var="org_id=${{ secrets.GCP_ORG_ID }}" \
+      #       -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
+      #       -var-file="terraform.tfvars.json"
 
       # - name: Terraform Apply
       #   id: apply
