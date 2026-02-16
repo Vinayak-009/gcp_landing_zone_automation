@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
-      id-token: 'write' # Required if using Workload Identity (Optional but recommended)
+      #id-token: 'write' # Required if using Workload Identity (Optional but recommended)
 
     steps:
       - name: Checkout
