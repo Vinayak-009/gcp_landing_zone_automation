@@ -1,28 +1,43 @@
 variable "org_id" {
-  description = "The ID of the GCP Organization."
   type        = string
+  description = "Organization ID (passed via secrets)"
 }
 
 variable "billing_account" {
-  description = "The Billing Account ID."
   type        = string
+  description = "Billing Account ID (passed via secrets)"
 }
 
 variable "folders" {
-  description = "A flat list of all folders to create, with their parent explicitly defined."
+  description = "List of folders from JSON."
   type = list(object({
     name   = string
-    parent = string # The 'name' of the parent folder, or 'org' for the root.
+    parent = string
   }))
   default = []
 }
 
 variable "projects" {
-  description = "A list of projects to create, including the name of their parent folder."
+  description = "List of projects from JSON."
   type = list(object({
-    parent_folder = string # The 'name' of the parent folder.
+    parent_folder = string
     project_name  = string
     project_id    = string
+  }))
+  default = []
+}
+
+variable "instances" {
+  description = "List of instances from JSON."
+  type = list(object({
+    name              = string
+    target_project_id = string
+    region            = string
+    zone              = string
+    machine_type      = string
+    disk_size         = number
+    disk_type         = string
+    image             = string
   }))
   default = []
 }

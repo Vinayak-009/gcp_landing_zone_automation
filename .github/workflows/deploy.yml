@@ -1,4 +1,4 @@
-name: 'Terraform Landing Zone Action' # Renamed for clarity
+name: 'Terraform Landing Zone Deploy'
 
 on:
   push:
@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
+      id-token: 'write' # Required if using Workload Identity (Optional but recommended)
 
     steps:
       - name: Checkout
@@ -34,29 +35,19 @@ jobs:
           terraform init \
             -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}"
 
-      # - name: Terraform Plan
-      #   id: plan
-      #   run: |
-      #     terraform plan -no-color \
-      #       -var="org_id=${{ secrets.GCP_ORG_ID }}" \
-      #       -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
-      #       -var-file="terraform.tfvars.json"
-
-      # - name: Terraform Apply
-      #   id: apply
-      #   run: |
-      #     terraform apply -auto-approve -no-color \
-      #       -var="org_id=${{ secrets.GCP_ORG_ID }}" \
-      #       -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
-      #       -var-file="terraform.tfvars.json"
-
-      # --- STEP 3: NEW DESTROY STEP IS ADDED ---
-      # This will now run instead of plan and apply.
-      - name: Terraform Destroy
-        id: destroy
+      - name: Terraform Plan
+        id: plan
         run: |
-          terraform destroy -auto-approve -no-color \
+          terraform plan -no-color \
             -var="org_id=${{ secrets.GCP_ORG_ID }}" \
             -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
             -var-file="terraform.tfvars.json"
 
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        id: apply
+        run: |
+          terraform apply -auto-approve -no-color \
+            -var="org_id=${{ secrets.GCP_ORG_ID }}" \
+            -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
+            -var-file="terraform.tfvars.json"

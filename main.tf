@@ -1,118 +1,97 @@
 locals {
-  # Dynamically filter folders by level (CORRECTED SYNTAX)
-  level_1_folders = [for f in var.folders : f if f.parent == "org"]
-  level_2_folders = [for f in var.folders : f if contains([for ff in local.level_1_folders : ff.name], f.parent)]
-  level_3_folders = [for f in var.folders : f if contains([for ff in local.level_2_folders : ff.name], f.parent)]
-  level_4_folders = [for f in var.folders : f if contains([for ff in local.level_3_folders : ff.name], f.parent)]
-  level_5_folders = [for f in var.folders : f if contains([for ff in local.level_4_folders : ff.name], f.parent)]
-  level_6_folders = [for f in var.folders : f if contains([for ff in local.level_5_folders : ff.name], f.parent)]
-  level_7_folders = [for f in var.folders : f if contains([for ff in local.level_6_folders : ff.name], f.parent)]
-  level_8_folders = [for f in var.folders : f if contains([for ff in local.level_7_folders : ff.name], f.parent)]
-  level_9_folders = [for f in var.folders : f if contains([for ff in local.level_8_folders : ff.name], f.parent)]
-  level_10_folders = [for f in var.folders : f if contains([for ff in local.level_9_folders : ff.name], f.parent)]
-
-  # Merge all folder IDs for dynamic lookup in projects/outputs (covers all levels)
-  all_folder_ids = merge(
-    { for k, v in google_folder.level_1 : k => v.id },
-    { for k, v in google_folder.level_2 : k => v.id },
-    { for k, v in google_folder.level_3 : k => v.id },
-    { for k, v in google_folder.level_4 : k => v.id },
-    { for k, v in google_folder.level_5 : k => v.id },
-    { for k, v in google_folder.level_6 : k => v.id },
-    { for k, v in google_folder.level_7 : k => v.id },
-    { for k, v in google_folder.level_8 : k => v.id },
-    { for k, v in google_folder.level_9 : k => v.id },
-    { for k, v in google_folder.level_10 : k => v.id }
-  )
+  # Filter folders by level. 
+  # (Assuming your JSON structure from previous steps)
+  level_1 = [for f in var.folders : f if f.parent == "org"]
+  level_2 = [for f in var.folders : f if contains([for x in local.level_1 : x.name], f.parent)]
+  level_3 = [for f in var.folders : f if contains([for x in local.level_2 : x.name], f.parent)]
+  level_4 = [for f in var.folders : f if contains([for x in local.level_3 : x.name], f.parent)]
 }
 
-# Level 1 (root folders under org)
-resource "google_folder" "level_1" {
-  for_each = { for f in local.level_1_folders : f.name => f }
+# --- 1. FOLDER HIERARCHY ---
 
+resource "google_folder" "l1" {
+  for_each     = { for f in local.level_1 : f.name => f }
   display_name = each.value.name
   parent       = "organizations/${var.org_id}"
 }
 
-# Level 2 (CORRECTED PARENT ATTRIBUTE)
-resource "google_folder" "level_2" {
-  for_each = { for f in local.level_2_folders : f.name => f }
-
+resource "google_folder" "l2" {
+  for_each     = { for f in local.level_2 : f.name => f }
   display_name = each.value.name
-  parent       = google_folder.level_1[each.value.parent].id
+  parent       = google_folder.l1[each.value.parent].id
 }
 
-# Level 3 (CORRECTED PARENT ATTRIBUTE)
-resource "google_folder" "level_3" {
-  for_each = { for f in local.level_3_folders : f.name => f }
-
+resource "google_folder" "l3" {
+  for_each     = { for f in local.level_3 : f.name => f }
   display_name = each.value.name
-  parent       = google_folder.level_2[each.value.parent].id
+  parent       = google_folder.l2[each.value.parent].id
 }
 
-# Level 4 (CORRECTED PARENT ATTRIBUTE)
-resource "google_folder" "level_4" {
-  for_each = { for f in local.level_4_folders : f.name => f }
-
+resource "google_folder" "l4" {
+  for_each     = { for f in local.level_4 : f.name => f }
   display_name = each.value.name
-  parent       = google_folder.level_3[each.value.parent].id
+  parent       = google_folder.l3[each.value.parent].id
 }
 
-# Level 5 (CORRECTED PARENT ATTRIBUTE)
-resource "google_folder" "level_5" {
-  for_each = { for f in local.level_5_folders : f.name => f }
-
-  display_name = each.value.name
-  parent       = google_folder.level_4[each.value.parent].id
+# Combine all folder IDs so Projects can find them easily
+locals {
+  all_folders = merge(
+    { for k, v in google_folder.l1 : v.display_name => v.name },
+    { for k, v in google_folder.l2 : v.display_name => v.name },
+    { for k, v in google_folder.l3 : v.display_name => v.name },
+    { for k, v in google_folder.l4 : v.display_name => v.name }
+  )
 }
 
-# Level 6 (CORRECTED PARENT ATTRIBUTE)
-resource "google_folder" "level_6" {
-  for_each = { for f in local.level_6_folders : f.name => f }
+# --- 2. PROJECTS ---
 
-  display_name = each.value.name
-  parent       = google_folder.level_5[each.value.parent].id
-}
-
-# Level 7 (CORRECTED PARENT ATTRIBUTE)
-resource "google_folder" "level_7" {
-  for_each = { for f in local.level_7_folders : f.name => f }
-
-  display_name = each.value.name
-  parent       = google_folder.level_6[each.value.parent].id
-}
-
-# Level 8 (CORRECTED PARENT ATTRIBUTE)
-resource "google_folder" "level_8" {
-  for_each = { for f in local.level_8_folders : f.name => f }
-
-  display_name = each.value.name
-  parent       = google_folder.level_7[each.value.parent].id
-}
-
-# Level 9 (CORRECTED PARENT ATTRIBUTE)
-resource "google_folder" "level_9" {
-  for_each = { for f in local.level_9_folders : f.name => f }
-
-  display_name = each.value.name
-  parent       = google_folder.level_8[each.value.parent].id
-}
-
-# Level 10 (CORRECTED PARENT ATTRIBUTE)
-resource "google_folder" "level_10" {
-  for_each = { for f in local.level_10_folders : f.name => f }
-
-  display_name = each.value.name
-  parent       = google_folder.level_9[each.value.parent].id
-}
-
-
-# Projects (uses the merged map of all folder IDs)
 resource "google_project" "main" {
   for_each = { for p in var.projects : p.project_id => p }
 
-  project_id      = each.value.project_id
   name            = each.value.project_name
+  project_id      = each.value.project_id
   billing_account = var.billing_account
-  folder_id       = local.all_folder_ids[each.value.parent_folder]
+  
+  # Look up the folder ID from the local map
+  folder_id       = local.all_folders[each.value.parent_folder]
+}
+
+# --- 3. ENABLE API ---
+
+resource "google_project_service" "compute" {
+  for_each = google_project.main
+
+  project = each.value.project_id
+  service = "compute.googleapis.com"
+  
+  disable_on_destroy = false
+}
+
+# --- 4. WAIT TIMER (The solution to your question) ---
+# This pauses Terraform for 60 seconds after enabling the API
+resource "time_sleep" "wait_for_api" {
+  create_duration = "60s"
+
+  depends_on = [google_project_service.compute]
+}
+
+# --- 5. VM INSTANCES ---
+
+module "compute_instances" {
+  source = "./modules/compute_instance"
+
+  for_each = { for vm in var.instances : vm.name => vm }
+
+  instance_name = each.value.name
+  project_id    = each.value.target_project_id
+  zone          = each.value.zone
+  machine_type  = each.value.machine_type
+  image         = each.value.image
+  disk_size     = each.value.disk_size
+  disk_type     = each.value.disk_type
+
+  # Explicit dependency on the TIMER, not just the API
+  depends_on = [
+    time_sleep.wait_for_api
+  ]
 }
