@@ -43,11 +43,11 @@ jobs:
             -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
             -var-file="terraform.tfvars.json"
 
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        id: apply
-        run: |
-          terraform apply -auto-approve -no-color \
-            -var="org_id=${{ secrets.GCP_ORG_ID }}" \
-            -var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
-            -var-file="terraform.tfvars.json"
+     # - name: Terraform Apply
+      #  if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+       # id: apply
+        #run: |
+         # terraform apply -auto-approve -no-color \
+            #-var="org_id=${{ secrets.GCP_ORG_ID }}" \
+            #-var="billing_account=${{ secrets.GCP_BILLING_ACCOUNT }}" \
+            #-var-file="terraform.tfvars.json"
